@@ -1,0 +1,19 @@
+/build/
+
+# Eclipse固有の設定ファイル
+.metadata/
+.settings/
+.recommenders/
+.classpath
+.project
+*.tmp
+*.bak
+
+# コンパイル済みの実行ファイル・生成物
+bin/
+target/
+*.class
+
+# OS固有の一時ファイル
+.DS_Store
+Thumbs.db
