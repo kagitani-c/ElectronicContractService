@@ -14,7 +14,7 @@ import model.entity.FolderHistory;
 
 public class FolderDAO {
 	// 変更後（H2用）
-    private final String URL = "jdbc:h2:file:C:/data/esign_db;AUTO_SERVER=TRUE";
+    private final String URL = "jdbc:h2:./data/esign_db;AUTO_SERVER=TRUE"; //相対パスに修正済み
     private final String USER = "sa";
     private final String PASS = ""; // パスワードは空欄なので空文字
 
@@ -66,12 +66,28 @@ public class FolderDAO {
         return folderList;
     }
     
-    /**
+/**
      * 新規フォルダをデータベースに登録する（INSERT処理）
      * @param folder 登録するフォルダ情報が詰まったエンティティ
      * @return 登録成功時に自動採番された folder_id (失敗時は -1)
      */
     public int insertFolder(Folder folder) {
+        // ★ FOLDERテーブルが存在しない場合に自動生成するSQL
+        String createTableSql = "CREATE TABLE IF NOT EXISTS folder ("
+                + "folder_id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "created_by INT, "
+                + "invited_user_id INT, "
+                + "folder_name VARCHAR(255) NOT NULL, "
+                + "target_company_name VARCHAR(255), "
+                + "target_department_name VARCHAR(255), "
+                + "target_user_name VARCHAR(255), "
+                + "target_email VARCHAR(255), "
+                + "token VARCHAR(255), "
+                + "is_cert_issuance_allowed BOOLEAN DEFAULT FALSE, "
+                + "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                + "updated_by INT"
+                + ")";
+
         // プロのテクニック①：プレースホルダ（?）を使ってSQLインジェクションを防ぐ
         String sql = "INSERT INTO folder "
                    + "(created_by, invited_user_id, folder_name, target_company_name, target_department_name, target_user_name, target_email, token, is_cert_issuance_allowed) "
@@ -82,36 +98,43 @@ public class FolderDAO {
         try {
             Class.forName("org.h2.Driver");
             
-            // プロのテクニック②：Statement.RETURN_GENERATED_KEYS で自動採番されたIDを取得する
-            try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
-                 PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            try (Connection conn = DriverManager.getConnection(URL, USER, PASS)) {
 
-                // 1. 各「?」に実際のデータをセットしていく
-                pstmt.setInt(1, folder.getCreatedBy());
-                
-                // invitedUserId は Null の可能性があるため、分岐処理を入れる
-                if (folder.getInvitedUserId() != null) {
-                    pstmt.setInt(2, folder.getInvitedUserId());
-                } else {
-                    pstmt.setNull(2, java.sql.Types.INTEGER);
+                // ★ 1. FOLDERテーブルがなければ自動作成する
+                try (PreparedStatement createStmt = conn.prepareStatement(createTableSql)) {
+                    createStmt.execute();
                 }
-                
-                pstmt.setString(3, folder.getFolderName());
-                pstmt.setString(4, folder.getTargetCompanyName());
-                pstmt.setString(5, folder.getTargetDepartmentName());
-                pstmt.setString(6, folder.getTargetUserName());
-                pstmt.setString(7, folder.getTargetEmail());
-                pstmt.setString(8, folder.getToken());
-                pstmt.setBoolean(9, folder.isCertIssuanceAllowed());
 
-                // 2. SQLを実行（executeUpdate は書き換えられた行数を返す。成功なら1）
-                int affectedRows = pstmt.executeUpdate();
+                // ★ 2. プロのテクニック②：Statement.RETURN_GENERATED_KEYS で自動採番されたIDを取得する
+                try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-                // 3. 成功した場合、H2データベースが自動で割り振った「folder_id」を取得する
-                if (affectedRows > 0) {
-                    try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                        if (rs.next()) {
-                            generatedId = rs.getInt(1); // 1番目のカラム（folder_id）を取得
+                    // 各「?」に実際のデータをセットしていく
+                    pstmt.setInt(1, folder.getCreatedBy());
+                    
+                    // invitedUserId は Null の可能性があるため、分岐処理を入れる
+                    if (folder.getInvitedUserId() != null) {
+                        pstmt.setInt(2, folder.getInvitedUserId());
+                    } else {
+                        pstmt.setNull(2, java.sql.Types.INTEGER);
+                    }
+                    
+                    pstmt.setString(3, folder.getFolderName());
+                    pstmt.setString(4, folder.getTargetCompanyName());
+                    pstmt.setString(5, folder.getTargetDepartmentName());
+                    pstmt.setString(6, folder.getTargetUserName());
+                    pstmt.setString(7, folder.getTargetEmail());
+                    pstmt.setString(8, folder.getToken());
+                    pstmt.setBoolean(9, folder.isCertIssuanceAllowed());
+
+                    // SQLを実行（executeUpdate は書き換えられた行数を返す。成功なら1）
+                    int affectedRows = pstmt.executeUpdate();
+
+                    // 成功した場合、H2データベースが自動で割り振った「folder_id」を取得する
+                    if (affectedRows > 0) {
+                        try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                            if (rs.next()) {
+                                generatedId = rs.getInt(1); // 1番目のカラム（folder_id）を取得
+                            }
                         }
                     }
                 }

@@ -22,5 +22,10 @@
         <br>
         <button type="submit">ログインする</button>
     </form>
+    <br>
+    <br>
+    <div style="text-align: center; margin-top: 15px;">
+	  <a href="<%= request.getContextPath() %>/Register">新規アカウント登録はこちら</a>
+	</div>
 </body>
 </html>

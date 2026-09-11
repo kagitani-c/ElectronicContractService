@@ -17,3 +17,9 @@ target/
 # OS固有の一時ファイル
 .DS_Store
 Thumbs.db
+
+# データベースファイルとアップロードファイルを除外
+data/*.mv.db
+data/*.trace.db
+data/uploads/*
+!data/uploads/.gitkeep

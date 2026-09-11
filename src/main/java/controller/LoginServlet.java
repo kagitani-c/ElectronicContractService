@@ -12,7 +12,9 @@ import jakarta.servlet.http.HttpSession;
 import model.dao.UserDAO;
 import model.entity.User;
 
-@WebServlet("/LoginServlet")
+//修正前: @WebServlet("/LoginServlet")
+//修正後: どちらのURLからアクセスされても対応できるようにする
+@WebServlet({"/Login", "/LoginServlet"})
 public class LoginServlet extends HttpServlet {
 
     // GETリクエスト：ログイン画面を表示するだけ
@@ -28,6 +30,11 @@ public class LoginServlet extends HttpServlet {
         // 1. 画面から送られてきた値を受け取る
         String email = request.getParameter("email");
         String password = request.getParameter("password");
+        
+        //テスト！一時的に記載！
+        System.out.println("【デバッグ】受信メール: " + email);
+        System.out.println("【デバッグ】受信パスワード: " + password);
+        //テスト！一時的に記載！
 
         // 2. DAOを使ってDBを検索
         UserDAO dao = new UserDAO();

@@ -23,8 +23,8 @@ import model.entity.ContractDocument;
 )
 public class UploadPdfServlet extends HttpServlet {
 
-    // 保存先のフォルダ（Cドライブ直下に保存します）
-    private static final String UPLOAD_DIR = "C:/data/uploads";
+    // 保存先のフォルダ（プロジェクト直下に保存）
+    private static final String UPLOAD_DIR = "./data/uploads";
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
@@ -53,16 +53,20 @@ public class UploadPdfServlet extends HttpServlet {
 
         // 4. ファイル名の重複を防ぐため、システム時間をファイル名の先頭にくっつける
         String saveFileName = System.currentTimeMillis() + "_" + originalFileName;
-        String absoluteSavePath = UPLOAD_DIR + File.separator + saveFileName;
+        
+        // 4-2. 実際に保存するファイルオブジェクトを作成
+        File targetFile = new File(uploadDir, saveFileName);
+        
+        // 5. サーバー上の指定フォルダへ確実に保存（書き込み時は絶対パスを渡して安全を担保）
+        filePart.write(targetFile.getAbsolutePath());
 
-        // 5. 実際にCドライブへファイルを書き込む（保存！）
-        filePart.write(absoluteSavePath);
-
-        // 6. データベースへ情報を記録する
+        // 6. データベースへ情報を記録する（DBには環境に依存しない相対パスを保存）
+        String relativeFilePath = UPLOAD_DIR + "/" + saveFileName;
+        
         ContractDocument doc = new ContractDocument();
         doc.setFolderId(folderId);
         doc.setTitle(originalFileName); // 画面表示用には元のファイル名を使用
-        doc.setFilePath(absoluteSavePath); // DBには実際の保存パスを記録
+        doc.setFilePath(relativeFilePath); // DBには相対パス（./data/uploads/...）を記録
 
         ContractDocumentDAO dao = new ContractDocumentDAO();
         dao.insertDocument(doc);

@@ -39,6 +39,6 @@
     </table>
 
     <br>
-    <a href="createFolder.jsp">新規フォルダ作成</a>
+    <a href="CreateFolderServlet">新規フォルダ作成</a>
 </body>
 </html>
