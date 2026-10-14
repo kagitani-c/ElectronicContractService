@@ -12,73 +12,81 @@ import jakarta.servlet.http.HttpSession;
 
 import model.dao.FolderDAO;
 import model.entity.Folder;
-import model.entity.User; // ログインユーザーのクラス
+import model.entity.User;
 
 @WebServlet("/CreateFolderServlet")
 public class CreateFolderServlet extends HttpServlet {
 
-    // 画面を表示するためのGETリクエスト処理
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 入力画面（JSP）へフォワード
-        request.getRequestDispatcher("/WEB-INF/jsp/createFolder.jsp").forward(request, response);
-        // ※createFolder.jspをWEB-INF外に置いている場合は、単に response.sendRedirect("createFolder.jsp"); でもOKです。
-    }
 
-    // フォームから送信されたデータを受け取るPOSTリクエスト処理
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        
-        // 1. 文字化け防止（必ず最初に書く）
-        request.setCharacterEncoding("UTF-8");
-
-        // 2. セッションからログイン中のユーザー情報を取得
         HttpSession session = request.getSession();
         User loginUser = (User) session.getAttribute("loginUser");
-
-        // ※テスト用：ログイン機能が未完成の場合は、強制的に user_id = 1 をセットして進める
-        int createdByUserId = 1; 
-        if (loginUser != null) {
-            createdByUserId = loginUser.getUserId();
+        if (loginUser == null) {
+            response.sendRedirect("Login");
+            return;
         }
 
-        // 3. JSPから送信されたパラメータ（name属性の値）を受け取る
+        // ★ガード処理：招待ユーザーは新規フォルダ作成画面を開けない
+        if (loginUser.isGuest()) {
+            response.sendRedirect("FolderListServlet?error=forbidden_guest");
+            return;
+        }
+
+        request.getRequestDispatcher("/WEB-INF/jsp/createFolder.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        request.setCharacterEncoding("UTF-8");
+        HttpSession session = request.getSession();
+        User loginUser = (User) session.getAttribute("loginUser");
+        if (loginUser == null) {
+            response.sendRedirect("Login");
+            return;
+        }
+
+        // ★ガード処理：招待ユーザーによる不正POSTを拒絶
+        if (loginUser.isGuest()) {
+            response.sendRedirect("FolderListServlet?error=forbidden_guest");
+            return;
+        }
+
         String folderName = request.getParameter("folderName");
-        String companyName = request.getParameter("companyName");
-        String departmentName = request.getParameter("departmentName");
-        String userName = request.getParameter("userName");
-        String email = request.getParameter("email");
-        String allowCertStr = request.getParameter("allowCert");
+        String targetCompanyName = request.getParameter("targetCompanyName");
+        String targetDepartmentName = request.getParameter("targetDepartmentName");
+        String targetUserName = request.getParameter("targetUserName");
+        String targetEmail = request.getParameter("targetEmail");
+        boolean certIssuanceAllowed = "true".equals(request.getParameter("certIssuanceAllowed"));
 
-        // 4. 受け取ったデータをエンティティ（Folder）にセットする
+        if (folderName == null || folderName.trim().isEmpty() ||
+            targetCompanyName == null || targetCompanyName.trim().isEmpty() ||
+            targetUserName == null || targetUserName.trim().isEmpty() ||
+            targetEmail == null || targetEmail.trim().isEmpty()) {
+            response.sendRedirect("CreateFolderServlet?error=empty_fields");
+            return;
+        }
+
         Folder folder = new Folder();
-        folder.setCreatedBy(createdByUserId);
-        folder.setFolderName(folderName);
-        folder.setTargetCompanyName(companyName);
-        folder.setTargetDepartmentName(departmentName);
-        folder.setTargetUserName(userName);
-        folder.setTargetEmail(email);
-        
-        // true/falseの文字列をboolean型に変換
-        boolean isAllow = Boolean.parseBoolean(allowCertStr);
-        folder.setCertIssuanceAllowed(isAllow);
+        folder.setCreatedBy(loginUser.getUserId());
+        folder.setFolderName(folderName.trim());
+        folder.setTargetCompanyName(targetCompanyName.trim());
+        folder.setTargetDepartmentName(targetDepartmentName != null ? targetDepartmentName.trim() : "");
+        folder.setTargetUserName(targetUserName.trim());
+        folder.setTargetEmail(targetEmail.trim());
+        folder.setCertIssuanceAllowed(certIssuanceAllowed);
+        folder.setToken(UUID.randomUUID().toString());
 
-        // 共有用URLのためのランダムなトークンを自動生成してセット
-        String token = UUID.randomUUID().toString();
-        folder.setToken(token);
+        FolderDAO folderDao = new FolderDAO();
+        int newFolderId = folderDao.insertFolder(folder);
 
-        // 5. DAOを呼び出してデータベースに保存する
-        FolderDAO dao = new FolderDAO();
-        int newFolderId = dao.insertFolder(folder);
-
-        // 6. 結果に応じて画面遷移
         if (newFolderId > 0) {
-            // 成功時：フォルダ一覧を表示するサーブレットへ「リダイレクト（再リクエスト）」する
-            response.sendRedirect("FolderListServlet");
+            response.sendRedirect("FolderDetailServlet?id=" + newFolderId);
         } else {
-            // 失敗時：エラーメッセージをセットして、もう一度入力画面へ戻す
-            request.setAttribute("errorMsg", "フォルダの作成に失敗しました。");
-            request.getRequestDispatcher("/WEB-INF/jsp/createFolder.jsp").forward(request, response);
+            response.sendRedirect("CreateFolderServlet?error=create_failed");
         }
     }
 }

@@ -17,13 +17,14 @@ import model.entity.User;
 public class EditFolderServlet extends HttpServlet {
 
     // 【画面表示】変更画面を開くときの処理
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
         HttpSession session = request.getSession();
         User loginUser = (User) session.getAttribute("loginUser");
         if (loginUser == null) {
-            response.sendRedirect("LoginServlet");
+            response.sendRedirect("Login");
             return;
         }
 
@@ -49,23 +50,54 @@ public class EditFolderServlet extends HttpServlet {
     }
 
     // 【更新処理】「変更を保存する」ボタンが押されたときの処理
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
         request.setCharacterEncoding("UTF-8");
         HttpSession session = request.getSession();
         User loginUser = (User) session.getAttribute("loginUser");
+        if (loginUser == null) {
+            response.sendRedirect("Login");
+            return;
+        }
 
-        // 1. フォームから送信された値を受け取る
+        // 1. フォームから送信された値を受け取る（両方のパラメータ名に対応）
         int folderId = Integer.parseInt(request.getParameter("folderId"));
         String folderName = request.getParameter("folderName");
-        String companyName = request.getParameter("companyName");
-        String departmentName = request.getParameter("departmentName");
-        String userName = request.getParameter("userName");
-        String email = request.getParameter("email");
-        boolean isAllow = Boolean.parseBoolean(request.getParameter("allowCert"));
 
-        // 2. エンティティに詰め込む（更新に必要な情報だけセットします）
+        // 企業名（targetCompanyName または companyName）
+        String companyName = request.getParameter("targetCompanyName");
+        if (companyName == null) {
+            companyName = request.getParameter("companyName");
+        }
+
+        // 部署名（targetDepartmentName または departmentName）
+        String departmentName = request.getParameter("targetDepartmentName");
+        if (departmentName == null) {
+            departmentName = request.getParameter("departmentName");
+        }
+
+        // 担当者名（targetUserName または userName）
+        String userName = request.getParameter("targetUserName");
+        if (userName == null) {
+            userName = request.getParameter("userName");
+        }
+
+        // メールアドレス（targetEmail または email）
+        String email = request.getParameter("targetEmail");
+        if (email == null) {
+            email = request.getParameter("email");
+        }
+
+        // 証明書発行許可フラグ（certIssuanceAllowed または allowCert）
+        String allowParam = request.getParameter("certIssuanceAllowed");
+        if (allowParam == null) {
+            allowParam = request.getParameter("allowCert");
+        }
+        boolean isAllow = Boolean.parseBoolean(allowParam);
+
+        // 2. エンティティに詰め込む
         Folder folder = new Folder();
         folder.setFolderId(folderId);
         folder.setFolderName(folderName);
@@ -75,14 +107,14 @@ public class EditFolderServlet extends HttpServlet {
         folder.setTargetEmail(email);
         folder.setCertIssuanceAllowed(isAllow);
         
-        // ★重要：誰が更新したか（履歴）を記録する
+        // 更新実行者の記録
         folder.setUpdatedBy(loginUser.getUserId());
 
         // 3. DAOを呼び出してデータベースを更新（UPDATE）
         FolderDAO dao = new FolderDAO();
         dao.updateFolder(folder);
 
-        // 4. 更新が終わったら、そのフォルダの詳細画面へ戻る
+        // 4. 更新完了後、フォルダ詳細画面へリダイレクト
         response.sendRedirect("FolderDetailServlet?id=" + folderId);
     }
 }

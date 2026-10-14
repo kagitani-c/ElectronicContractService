@@ -17,28 +17,30 @@ import model.entity.User;
 @WebServlet("/FolderListServlet")
 public class FolderListServlet extends HttpServlet {
 
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        // 1. セッションからログイン中のユーザー情報を取得
         HttpSession session = request.getSession();
         User loginUser = (User) session.getAttribute("loginUser");
 
         if (loginUser == null) {
-            // login.jspはWEB-INF内にあり直接アクセスできないため、
-            // ログイン画面を表示する担当の「LoginServlet」へリダイレクトさせます
-            response.sendRedirect("LoginServlet");
+            response.sendRedirect("Login");
             return;
         }
 
-        // 2. DAOを使ってDBからフォルダ一覧を取得
         FolderDAO folderDAO = new FolderDAO();
         List<Folder> folderList = folderDAO.getFoldersByUserId(loginUser.getUserId());
 
-        // 3. 取得したリストをリクエストスコープに保存
-        request.setAttribute("folderList", folderList);
+        // ★ワンクリック電子証明書発行が許可されているかを判定
+        boolean canIssueCert = true;
+        if (loginUser.isGuest()) {
+            canIssueCert = folderDAO.isCertIssuanceAllowedByInvitedUserId(loginUser.getUserId());
+        }
 
-        // 4. JSP（ビュー）へフォワード
+        request.setAttribute("folderList", folderList);
+        request.setAttribute("canIssueCert", canIssueCert);
+
         request.getRequestDispatcher("/WEB-INF/jsp/folderList.jsp").forward(request, response);
     }
 }

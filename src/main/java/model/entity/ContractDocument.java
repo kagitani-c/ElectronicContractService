@@ -15,11 +15,22 @@ public class ContractDocument {
     private Timestamp deletedAt;
     private Integer deletedBy;
     
+    // --- 電子署名用フィールド ---
+    private String signatureData; // Base64エンコードされたRSA署名データ
+    private String fileHash;      // PDFのSHA-256ハッシュ値（改ざん検証用）
+    private Timestamp signedAt;   // 署名日時
+    private Integer signedBy;     // 署名実行ユーザーID   
+    
     // 1 = 初期・送信者署名時, 2 = 外部署名アップロード時（双方署名完了）
     private int version; 
     
     // 実際のファイルが保存されているパス
     private String filePath; 
+    
+    
+    private String invitedSignatureData;
+    private java.sql.Timestamp invitedSignedAt;
+    private Integer invitedSignedBy;
 
     // デフォルトコンストラクタ
     public ContractDocument() {
@@ -98,5 +109,27 @@ public class ContractDocument {
 	public void setDeletedBy(Integer deletedBy) {
 		this.deletedBy = deletedBy;
 	}
+	
+	// --- 電子署名用　追加の Getter / Setter ---
+    public String getSignatureData() { return signatureData; }
+    public void setSignatureData(String signatureData) { this.signatureData = signatureData; }
+
+    public String getFileHash() { return fileHash; }
+    public void setFileHash(String fileHash) { this.fileHash = fileHash; }
+
+    public Timestamp getSignedAt() { return signedAt; }
+    public void setSignedAt(Timestamp signedAt) { this.signedAt = signedAt; }
+
+    public Integer getSignedBy() { return signedBy; }
+    public void setSignedBy(Integer signedBy) { this.signedBy = signedBy; }
     
+    
+    public String getInvitedSignatureData() { return invitedSignatureData; }
+    public void setInvitedSignatureData(String invitedSignatureData) { this.invitedSignatureData = invitedSignatureData; }
+
+    public java.sql.Timestamp getInvitedSignedAt() { return invitedSignedAt; }
+    public void setInvitedSignedAt(java.sql.Timestamp invitedSignedAt) { this.invitedSignedAt = invitedSignedAt; }
+
+    public Integer getInvitedSignedBy() { return invitedSignedBy; }
+    public void setInvitedSignedBy(Integer invitedSignedBy) { this.invitedSignedBy = invitedSignedBy; }
 }

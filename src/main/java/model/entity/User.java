@@ -9,8 +9,9 @@ public class User {
     private String email;
     private String password;
     private String userName;
+    private String companyName;
     
-    // "REGISTERED" (登録ユーザー), "INVITED" (招待ユーザー)
+    // "REGISTERED" (登録ユーザー), "INVITED" (招待ユーザー), "GENERAL"
     private String userType; 
     
     // "PREMIUM" (上位プラン), "LIGHT" (下位プラン), "NONE" (未契約/招待ユーザー)
@@ -21,6 +22,15 @@ public class User {
 
     // デフォルトコンストラクタ
     public User() {
+    }
+
+    // --- 権限判定メソッド ---
+
+    /**
+     * 招待ユーザー（閲覧・署名専用のゲスト）かどうかを判定する
+     */
+    public boolean isGuest() {
+        return "INVITED".equalsIgnoreCase(this.userType) || "GUEST".equalsIgnoreCase(this.userType);
     }
 
     // --- Getter / Setter ---
@@ -79,5 +89,13 @@ public class User {
 
     public void setCertificatePath(String certificatePath) {
         this.certificatePath = certificatePath;
+    }
+    
+    public String getCompanyName() {
+        return companyName;
+    }
+    
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
     }
 }

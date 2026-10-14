@@ -25,6 +25,9 @@ public class Folder {
 
 	private Timestamp updatedAt;
     private Integer updatedBy; // Nullを許容するためInteger
+    
+    // Folder.java への追加分
+    private String status; // DRAFT, WAITING_SIGN, COMPLETED
 
     // -----------------------------------------------------
     // 2. コンストラクタ
@@ -133,5 +136,13 @@ public class Folder {
 	public void setUpdatedBy(Integer updatedBy) {
 		this.updatedBy = updatedBy;
 	}
+	
+	public String getStatus() {
+		return status;
+	
+	}
+    public void setStatus(String status) {
+    	this.status = status;
+    }
 
 }

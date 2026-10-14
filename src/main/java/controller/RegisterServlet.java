@@ -1,4 +1,4 @@
-package controller; // ※ servlet パッケージの場合は package servlet; に変更してください
+package controller;
 
 import java.io.IOException;
 
@@ -9,11 +9,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import model.dao.UserDAO; // または import model.UserDAO;
-// ご自身の構成に合わせて import パスを確認してください
-import model.entity.User; // または import model.User;
+import model.dao.UserDAO;
+import model.entity.User;
 
-@WebServlet("/Register")
+@WebServlet("/RegisterServlet")
 public class RegisterServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
@@ -54,8 +53,10 @@ public class RegisterServlet extends HttpServlet {
         boolean isSuccess = dao.registerUser(user);
 
         if (isSuccess) {
-            // 登録成功時はログイン画面へリダイレクト
-            response.sendRedirect(request.getContextPath() + "/Login");
+            // 登録成功時はフラグをセットして register.jsp へフォワード
+            request.setAttribute("isSuccess", true);
+            RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/register.jsp");
+            dispatcher.forward(request, response);
         } else {
             // メールアドレス重複などのエラー時
             request.setAttribute("errorMsg", "登録に失敗しました。既に同じメールアドレスが登録されている可能性があります。");

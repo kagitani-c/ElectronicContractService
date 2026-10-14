@@ -26,11 +26,31 @@
       <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
+
     <!-- H2 Database -->
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <version>2.2.224</version>
+    </dependency>
+    
+    <!-- Apache PDFBox: PDFファイルの読み書き・バイナリ操作を行う基本ライブラリ -->
+    <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
+      <version>2.0.31</version>
+    </dependency>
+
+    <!-- Bouncy Castle: PAdES規格の暗号データ（PKCS#7 / CMS）を生成する暗号化ライブラリ -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+      <version>1.78.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <version>1.78.1</version>
     </dependency>
   </dependencies>
 

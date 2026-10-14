@@ -2,6 +2,7 @@ package controller;
 
 import java.io.IOException;
 
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -12,46 +13,59 @@ import jakarta.servlet.http.HttpSession;
 import model.dao.UserDAO;
 import model.entity.User;
 
-//修正前: @WebServlet("/LoginServlet")
-//修正後: どちらのURLからアクセスされても対応できるようにする
 @WebServlet({"/Login", "/LoginServlet"})
 public class LoginServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
 
-    // GETリクエスト：ログイン画面を表示するだけ
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+    // ログイン画面の表示（GET）
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getRequestDispatcher("/WEB-INF/jsp/login.jsp").forward(request, response);
+        
+        // 既にログイン済みの場合はダッシュボードへ直行
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute("loginUser") != null) {
+            response.sendRedirect(request.getContextPath() + "/DashboardServlet");
+            return;
+        }
+
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/jsp/login.jsp");
+        dispatcher.forward(request, response);
     }
 
-    // POSTリクエスト：ログインボタンが押された時の認証処理
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+    // ログイン認証処理（POST）
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        // 1. 画面から送られてきた値を受け取る
+        request.setCharacterEncoding("UTF-8");
+
         String email = request.getParameter("email");
         String password = request.getParameter("password");
-        
-        //テスト！一時的に記載！
-        System.out.println("【デバッグ】受信メール: " + email);
-        System.out.println("【デバッグ】受信パスワード: " + password);
-        //テスト！一時的に記載！
 
-        // 2. DAOを使ってDBを検索
+        // 入力値チェック
+        if (email == null || email.trim().isEmpty() || password == null || password.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/Login?error=true");
+            return;
+        }
+
+        email = email.trim();
+        password = password.trim();
+
+        // DB認証
         UserDAO dao = new UserDAO();
-        User user = dao.findByEmailAndPassword(email, password);
+        User loginUser = dao.findByEmailAndPassword(email, password);
 
-        // 3. 認証結果による分岐
-        if (user != null) {
-            // 【大成功】セッション（サーバー側の記憶領域）にユーザー情報を保存
-            HttpSession session = request.getSession();
-            session.setAttribute("loginUser", user);
-            
-            // フォルダ一覧画面へリダイレクト（PRGパターン）
-            response.sendRedirect("FolderListServlet");
+        if (loginUser != null) {
+            // 認証成功：セッションを生成してユーザー情報を保持
+            HttpSession session = request.getSession(true);
+            session.setAttribute("loginUser", loginUser);
+
+            // ★ログイン成功後はダッシュボードへリダイレクト
+            response.sendRedirect(request.getContextPath() + "/DashboardServlet");
         } else {
-            // 【失敗】エラーメッセージをセットして、もう一度ログイン画面を表示
-            request.setAttribute("errorMsg", "メールアドレスまたはパスワードが間違っています。");
-            request.getRequestDispatcher("/WEB-INF/jsp/login.jsp").forward(request, response);
+            // 認証失敗：エラーパラメータ付きでログイン画面へ戻す
+            response.sendRedirect(request.getContextPath() + "/Login?error=true");
         }
     }
 }
