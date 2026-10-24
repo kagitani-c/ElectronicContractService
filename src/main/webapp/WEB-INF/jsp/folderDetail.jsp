@@ -101,9 +101,8 @@
         <tr>
             <th>招待用 URL（トークン付き）</th>
             <td>
-                <!-- ★★★ Renderのドメインに修正 ★★★ -->
-                <input type="text" id="inviteUrlInput" class="copy-input" 
-                       value="https://electroniccontractservice.onrender.com/GuestLoginServlet?token=${folder.token}" readonly>
+                <!-- アクセス環境に応じて動的にURLが挿入される入力欄 -->
+                <input type="text" id="inviteUrlInput" class="copy-input" value="" readonly>
                 <button type="button" id="copyBtn" class="btn-copy" onclick="copyInviteUrl()">📋 URLをコピー</button>
             </td>
         </tr>
@@ -311,6 +310,20 @@
 </div>
 
 <script>
+    // ★★★ 画面読み込み時に、現在のアクセス元環境に合わせて招待URLを自動生成 ★★★
+    window.addEventListener('DOMContentLoaded', () => {
+        const contextPath = '<%= request.getContextPath() %>';
+        const token = '${folder.token}';
+        
+        // window.location.origin により localhost または Render のドメイン・ポート・プロトコルを自動判別
+        const fullInviteUrl = window.location.origin + contextPath + '/GuestLoginServlet?token=' + encodeURIComponent(token);
+        
+        const inviteInput = document.getElementById('inviteUrlInput');
+        if (inviteInput) {
+            inviteInput.value = fullInviteUrl;
+        }
+    });
+
     // URLコピー処理
     function copyInviteUrl() {
         const copyInput = document.getElementById('inviteUrlInput');
